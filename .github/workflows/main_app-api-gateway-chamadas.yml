@@ -39,7 +39,6 @@ jobs:
     runs-on: ubuntu-latest
     needs: build
     permissions:
-      id-token: write
       contents: read
 
     steps:
@@ -48,17 +47,12 @@ jobs:
         with:
           name: java-app
 
-      - name: Login to Azure
-        uses: azure/login@v2
-        with:
-          client-id: ${{ secrets.AZUREAPPSERVICE_CLIENTID_B425047C875A4DC8AB20A566E57D264B }}
-          tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_3887A73102234090A0DF16C18BB74BD6 }}
-          subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_D8A9DEE415C947C3B70C4CAF48D5C7BA }}
-
+      # Autenticação pelo perfil de publicação do App Service (secret AZURE_PUBLISH_PROFILE_GATEWAY)
       - name: Deploy to Azure Web App
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'app-api-gateway-chamadas'
           slot-name: 'Production'
+          publish-profile: ${{ secrets.AZURE_PUBLISH_PROFILE_GATEWAY }}
           package: '*.jar'

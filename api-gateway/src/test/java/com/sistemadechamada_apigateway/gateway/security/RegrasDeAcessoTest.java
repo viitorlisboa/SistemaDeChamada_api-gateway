@@ -28,6 +28,7 @@ class RegrasDeAcessoTest {
         assertThat(RegrasDeAcesso.permitido(professor, POST, "/api/chamadas/9/presencas/lote")).isTrue();
         assertThat(RegrasDeAcesso.permitido(professor, PUT, "/api/chamadas/9/presencas/42")).isTrue();
         assertThat(RegrasDeAcesso.permitido(professor, PUT, "/api/chamadas/9/finalizar")).isTrue();
+        assertThat(RegrasDeAcesso.permitido(professor, PUT, "/api/chamadas/9")).isTrue();
         assertThat(RegrasDeAcesso.permitido(professor, DELETE, "/api/chamadas/9")).isTrue();
     }
 

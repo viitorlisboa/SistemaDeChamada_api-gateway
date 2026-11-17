@@ -1,5 +1,6 @@
 package com.sistemadechamada_apigateway.gateway.service;
 
+import com.sistemadechamada_apigateway.gateway.dto.AtualizarUsuarioDTO;
 import com.sistemadechamada_apigateway.gateway.dto.CriarUsuarioDTO;
 import com.sistemadechamada_apigateway.gateway.exception.ApiException;
 import com.sistemadechamada_apigateway.gateway.model.Role;
@@ -79,6 +80,56 @@ public class UsuarioService {
                 .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuário " + id + " não encontrado.")));
     }
 
+    /**
+     * Edita username, perfil e vínculo. 404 se o usuário não existir; 409 se o username ou o vínculo
+     * já forem de outro usuário, ou se a alteração deixar o sistema sem nenhum ADMIN ativo.
+     */
+    public Mono<Usuario> atualizar(Long id, AtualizarUsuarioDTO dto) {
+        return bloqueante(() -> {
+            Usuario usuario = buscarOuFalhar(id);
+            String login = dto.getUsername().trim().toLowerCase();
+
+            if (dto.getRole() != Role.ADMIN && dto.getReferenciaId() == null) {
+                throw new ApiException(HttpStatus.BAD_REQUEST,
+                        "referenciaId é obrigatório para " + dto.getRole() + " (id do aluno ou do professor).");
+            }
+            if (usuarioRepository.existeUsernameEmOutroUsuario(login, id)) {
+                throw new ApiException(HttpStatus.CONFLICT, "Já existe um usuário com o username '" + login + "'.");
+            }
+            if (usuario.getRole() == Role.ADMIN && dto.getRole() != Role.ADMIN && usuario.isAtivo()
+                    && usuarioRepository.contarAdminsAtivosExceto(id) == 0) {
+                throw new ApiException(HttpStatus.CONFLICT,
+                        "Este é o único administrador ativo: crie outro ADMIN antes de mudar o perfil dele.");
+            }
+
+            usuario.setUsername(login);
+            usuario.setRole(dto.getRole());
+            usuario.setReferenciaId(dto.getRole() == Role.ADMIN ? null : dto.getReferenciaId());
+            try {
+                usuarioRepository.atualizar(usuario);
+            } catch (org.springframework.dao.DataIntegrityViolationException e) {
+                throw new ApiException(HttpStatus.CONFLICT,
+                        "Já existe um login vinculado a este " + dto.getRole() + " (referenciaId " + dto.getReferenciaId() + ").");
+            }
+            return usuario;
+        });
+    }
+
+    /** Exclui o login. 404 se não existir; 409 se for o próprio usuário logado ou o único ADMIN ativo. */
+    public Mono<Void> excluir(Long id, Long idUsuarioLogado) {
+        return bloqueante(() -> {
+            Usuario usuario = buscarOuFalhar(id);
+            if (id.equals(idUsuarioLogado)) {
+                throw new ApiException(HttpStatus.CONFLICT, "Você não pode excluir o seu próprio usuário.");
+            }
+            if (usuario.getRole() == Role.ADMIN && usuario.isAtivo() && usuarioRepository.contarAdminsAtivosExceto(id) == 0) {
+                throw new ApiException(HttpStatus.CONFLICT, "Não é possível excluir o único administrador ativo.");
+            }
+            usuarioRepository.excluir(id);
+            return Boolean.TRUE;
+        }).then();
+    }
+
     public Mono<Void> alterarAtivo(Long id, boolean ativo) {
         return bloqueante(() -> {
             if (usuarioRepository.alterarAtivo(id, ativo) == 0) {
@@ -95,6 +146,11 @@ public class UsuarioService {
             }
             return Boolean.TRUE;
         }).then();
+    }
+
+    private Usuario buscarOuFalhar(Long id) {
+        return usuarioRepository.buscarPorId(id)
+                .orElseThrow(() -> new ApiException(HttpStatus.NOT_FOUND, "Usuário " + id + " não encontrado."));
     }
 
     private String hashFicticio() {

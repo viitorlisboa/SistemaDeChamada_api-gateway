@@ -16,7 +16,7 @@ import java.util.Map;
  * ADMIN     -> acesso total.
  * PROFESSOR -> leitura de alunos, turmas, professores, disciplinas, chamadas e presenças
  *              (cada microsserviço filtra pela turma do professor usando X-User-Role / X-Ref-Id);
- *              pode abrir, registrar presença, finalizar e excluir chamadas.
+ *              pode abrir, editar (data/horário), registrar presença, finalizar e excluir chamadas.
  *              Sem cadastro de alunos, turmas, professores, disciplinas ou usuários.
  * ALUNO     -> somente leitura (GET) dos próprios dados: o {id} da URL precisa ser igual ao
  *              referenciaId do token. Qualquer outro caminho ou método é negado.
@@ -36,7 +36,7 @@ public final class RegrasDeAcesso {
 
     private static final Map<HttpMethod, List<PathPattern>> PROFESSOR_ESCRITA = Map.of(
             HttpMethod.POST, padroes("/api/chamadas", "/api/chamadas/{id}/presencas", "/api/chamadas/{id}/presencas/**"),
-            HttpMethod.PUT, padroes("/api/chamadas/{id}/presencas/**", "/api/chamadas/{id}/finalizar"),
+            HttpMethod.PUT, padroes("/api/chamadas/{id}", "/api/chamadas/{id}/presencas/**", "/api/chamadas/{id}/finalizar"),
             HttpMethod.DELETE, padroes("/api/chamadas/{id}"));
 
     /** Padrões do ALUNO: a variável {alunoId} precisa ser o próprio referenciaId. */

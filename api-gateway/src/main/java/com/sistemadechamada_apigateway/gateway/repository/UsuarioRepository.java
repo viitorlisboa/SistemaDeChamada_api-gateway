@@ -61,6 +61,23 @@ public class UsuarioRepository {
                 .single() > 0;
     }
 
+    /** Username usado por OUTRO usuário (para a edição não acusar conflito consigo mesmo). */
+    public boolean existeUsernameEmOutroUsuario(String username, Long id) {
+        return jdbcClient.sql("SELECT COUNT(1) FROM usuarios WHERE username = :username AND id <> :id")
+                .param("username", username)
+                .param("id", id)
+                .query(Integer.class)
+                .single() > 0;
+    }
+
+    /** ADMINs ativos, exceto o informado (para não deixar o sistema sem nenhum administrador). */
+    public int contarAdminsAtivosExceto(Long id) {
+        return jdbcClient.sql("SELECT COUNT(1) FROM usuarios WHERE role = 'ADMIN' AND ativo = 1 AND id <> :id")
+                .param("id", id)
+                .query(Integer.class)
+                .single();
+    }
+
     public boolean existeAdmin() {
         return jdbcClient.sql("SELECT COUNT(1) FROM usuarios WHERE role = 'ADMIN'")
                 .query(Integer.class)
@@ -86,6 +103,25 @@ public class UsuarioRepository {
     public int alterarAtivo(Long id, boolean ativo) {
         return jdbcClient.sql("UPDATE usuarios SET ativo = :ativo WHERE id = :id")
                 .param("ativo", ativo)
+                .param("id", id)
+                .update();
+    }
+
+    public int atualizar(Usuario usuario) {
+        return jdbcClient.sql("""
+                        UPDATE usuarios
+                           SET username = :username, role = :role, referencia_id = :referenciaId
+                         WHERE id = :id
+                        """)
+                .param("username", usuario.getUsername())
+                .param("role", usuario.getRole().name())
+                .param("referenciaId", usuario.getReferenciaId())
+                .param("id", usuario.getId())
+                .update();
+    }
+
+    public int excluir(Long id) {
+        return jdbcClient.sql("DELETE FROM usuarios WHERE id = :id")
                 .param("id", id)
                 .update();
     }

@@ -48,7 +48,7 @@ spring:
               - "http://127.0.0.1:5174"
               # --- NUVEM (Host Azure Static Web Apps) ---
               # FRONTEND_URL = URL do Static Web Apps da assinatura atual (sem barra no fim)
-              - "${FRONTEND_URL:https://jolly-wave-02fe61f0f.5.azurestaticapps.net}"
+              - "${FRONTEND_URL:https://app-frontend-chamadas-c7axfpeze3bjg9c5.mexicocentral-01.azurewebsites.net}"
             allowed-methods:
               - GET
               - POST
